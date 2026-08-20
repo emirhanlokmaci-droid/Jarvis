@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #05080a;
+    --panel-bg: rgba(6,14,18,0.55);
+    --line: rgba(120,220,210,0.35);
+    --cyan: #6fe9d8;
+    --cyan-bright: #a6fff2;
+    --text: #cfeee8;
+    --text-dim: #4c7570;
+    --red: #ff5d5d;
+    --green: #6fe98a;
+    --amber: #ffcf5c;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background: radial-gradient(ellipse at 50% 40%, #0a1416 0%, #05080a 70%);
+    color:var(--text);
+    font-family:'Share Tech Mono', monospace;
+    overflow:hidden;
+    -webkit-user-select:none; user-select:none;
+    font-size:13px;
+  }
+  .app{ position:relative; height:100vh; width:100vw; display:flex; flex-direction:column; padding:14px; gap:10px; }
+
+  /* ===== title ===== */
+  .title{ text-align:center; }
+  .title .mark{
+    font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:8px;
+    font-size: clamp(16px,2vw,24px); color:var(--cyan-bright);
+    text-shadow:0 0 12px rgba(111,233,216,0.6);
+  }
+  .title .sub{ font-size:9px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-top:2px; }
+
+  /* ===== main grid ===== */
+  .main{
+    flex:1; display:grid;
+    grid-template-columns: minmax(180px,240px) 1fr minmax(200px,280px);
+    gap:12px; min-height:0;
+  }
+  .colL, .colR{ display:flex; flex-direction:column; gap:12px; min-height:0; }
+  .center{ position:relative; display:flex; align-items:center; justify-content:center; min-height:0; }
+
+  /* ===== bracket panel ===== */
+  .panel{
+    position:relative; border:1px solid var(--line); background:var(--panel-bg);
+    padding:10px 12px; backdrop-filter: blur(4px);
+  }
+  .panel::before, .panel::after,
+  .panel .c2::before, .panel .c2::after{
+    content:''; position:absolute; width:10px; height:10px; border-color:var(--cyan); border-style:solid; border-width:0;
+  }
+  .panel::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
+  .panel::after{ bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px; }
+
+  .plabel{
+    font-size:9px; letter-spacing:2px; color:var(--cyan); text-transform:uppercase;
+    display:flex; justify-content:space-between; margin-bottom:6px; opacity:0.85;
+  }
+
+  /* ===== time panel ===== */
+  .clock-big{
+    font-family:'Orbitron',sans-serif; font-size:clamp(30px,4vw,42px); font-weight:600; color:var(--text);
+    line-height:1; letter-spacing:1px;
+  }
+  .clock-sub{ font-size:10px; color:var(--text-dim); margin-top:6px; letter-spacing:1px; }
+  .clock-date{ font-size:10px; color:var(--text-dim); margin-top:2px; letter-spacing:1px; text-transform:uppercase; }
+
+  /* ===== weather panel ===== */
+  .wx-temp{ font-family:'Orbitron',sans-serif; font-size:clamp(24px,3vw,32px); color:var(--text); }
+  .wx-loc{ font-size:9px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+  .wx-cond{ font-size:11px; color:var(--text); margin-top:8px; }
+  .wx-extra{ font-size:10px; color:var(--text-dim); margin-top:2px; }
+
+  /* ===== system status ===== */
+  .stat-row{ margin-bottom:8px; }
+  .stat-row:last-child{ margin-bottom:0; }
+  .stat-label{ display:flex; justify-content:space-between; font-size:9px; letter-spacing:1px; color:var(--text-dim); text-transform:uppercase; margin-bottom:3px; }
+  .stat-bar{ height:5px; background:rgba(111,233,216,0.08); border:1px solid rgba(111,233,216,0.15); position:relative; }
+  .stat-fill{ height:100%; }
+  .stat-fill.cpu{ background:var(--red); width:56%; }
+  .stat-fill.ram{ background:var(--amber); width:73%; }
+  .stat-fill.disk{ background:var(--cyan); width:31%; }
+  .stat-fill.batt{ background:var(--green); width:88%; }
+  .stat-io{ display:flex; justify-content:space-between; font-size:9px; color:var(--text-dim); margin-top:8px; }
+
+  /* ===== center: starfield sphere ===== */
+  .stage{ position:relative; width:min(60vw,58vh,460px); height:min(60vw,58vh,460px); display:flex; align-items:center; justify-content:center; }
+  #starCanvas{ position:absolute; inset:0; width:100%; height:100%; }
+  .bloom{
+    position:absolute; inset:-10%; border-radius:50%;
+    background: radial-gradient(circle, rgba(111,233,216,0.10) 0%, transparent 68%);
+    filter: blur(8px); pointer-events:none;
+  }
+  .core-label{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:6px;
+    font-size:clamp(16px,2.4vw,26px); color:#eafcff;
+    text-shadow: 0 0 10px rgba(150,225,255,0.9), 0 0 26px rgba(90,190,255,0.6);
+    z-index:3; pointer-events:none;
+  }
+  .center-controls{
+    position:absolute; bottom:-6px; left:50%; transform:translateX(-50%);
+    display:flex; gap:18px; align-items:center;
+    font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim);
+  }
+  .center-controls .dot{ width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .center-controls .live{ color:var(--green); }
+  .center-controls .live .dot{ background:var(--green); box-shadow:0 0 6px var(--green); animation:blink 1.4s infinite; }
+  .center-controls .pause .dot{ background:var(--text-dim); }
+  .center-controls .shutdown .dot{ background:var(--red); }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+  .center-controls span{ display:flex; align-items:center; cursor:pointer; }
+
+  .mic-fab{
+    position:absolute; bottom:-64px; left:50%; transform:translateX(-50%);
+    width:46px; height:46px; border-radius:50%; cursor:pointer;
+    border:1px solid var(--cyan); background:rgba(111,233,216,0.08);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 14px rgba(111,233,216,0.3);
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .mic-fab.live{ box-shadow:0 0 28px rgba(111,233,216,0.7); transform:translateX(-50%) scale(1.05); }
+  .mic-fab svg{ width:18px; height:18px; fill:var(--cyan); }
+
+  /* ===== conversation log ===== */
+  .convo{ flex:1; display:flex; flex-direction:column; min-height:0; }
+  .convo-body{ flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:9px; padding-right:2px; }
+  .convo-body::-webkit-scrollbar{ width:3px; }
+  .convo-body::-webkit-scrollbar-thumb{ background:rgba(111,233,216,0.3); }
+  .msg{ font-size:11px; line-height:1.5; }
+  .msg .who{ color:var(--cyan); font-size:9px; letter-spacing:1px; text-transform:uppercase; margin-bottom:2px; }
+  .msg.user .who{ color:var(--text-dim); }
+  .msg .txt{ color:var(--text); }
+  .msg.user .txt{ color:var(--text-dim); }
+
+  .cmdline{
+    display:flex; align-items:center; gap:8px; margin-top:8px;
+    border-top:1px solid rgba(111,233,216,0.2); padding-top:8px;
+  }
+  .cmdline .caret{ color:var(--cyan); }
+  .cmdline input{
+    flex:1; background:transparent; border:none; outline:none; color:var(--text);
+    font-family:'Share Tech Mono',monospace; font-size:12px;
+  }
+  .cmdline input::placeholder{ color:var(--text-dim); }
+
+  /* ===== bottom bar ===== */
+  .bottombar{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:9px; letter-spacing:1px; color:var(--text-dim); padding:0 4px;
+  }
+  .bottombar .who{ display:flex; align-items:center; gap:6px; }
+  .bottombar .avatar{ width:18px; height:18px; border-radius:50%; background:linear-gradient(135deg,var(--cyan),#2a5a52); }
+
+  @media (max-width: 900px){
+    .main{ grid-template-columns:1fr; grid-template-rows:auto auto auto; }
+    .colL{ flex-direction:row; overflow-x:auto; }
+    .colL .panel{ min-width:150px; flex-shrink:0; }
+    .colR{ order:3; max-height:200px; }
+    .center{ order:2; height:46vh; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="title">
+    <div class="mark">J.A.R.V.I.S.</div>
+    <div class="sub">Just A Rather Very Intelligent System</div>
+  </div>
+
+  <div class="main">
+
+    <!-- LEFT: Time / Weather / System -->
+    <div class="colL">
+      <div class="panel">
+        <div class="plabel">Time</div>
+        <div class="clock-big" id="clockTime">--:--</div>
+        <div class="clock-sub" id="clockSec">SS</div>
+        <div class="clock-date" id="clockDate">-- ------- ----</div>
+      </div>
+
+      <div class="panel">
+        <div class="plabel">Weather · İstanbul</div>
+        <div class="wx-temp" id="wxTemp">--°C</div>
+        <div class="wx-loc">İSTANBUL</div>
+        <div class="wx-cond" id="wxCond">yükleniyor...</div>
+        <div class="wx-extra" id="wxExtra"></div>
+      </div>
+
+      <div class="panel" style="flex:1;">
+        <div class="plabel">System Status</div>
+        <div class="stat-row">
+          <div class="stat-label"><span>CPU</span><span>56%</span></div>
+          <div class="stat-bar"><div class="stat-fill cpu"></div></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-label"><span>RAM</span><span>73%</span></div>
+          <div class="stat-bar"><div class="stat-fill ram"></div></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-label"><span>Disk</span><span>31%</span></div>
+          <div class="stat-bar"><div class="stat-fill disk"></div></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-label"><span>Battery</span><span>88%</span></div>
+          <div class="stat-bar"><div class="stat-fill batt"></div></div>
+        </div>
+        <div class="stat-io"><span>▲ 50.2 KB/s</span><span>▼ 4.6 KB/s</span></div>
+      </div>
+    </div>
+
+    <!-- CENTER: starfield sphere -->
+    <div class="center">
+      <div class="stage">
+        <div class="bloom"></div>
+        <canvas id="starCanvas"></canvas>
+        <div class="core-label">JARVIS</div>
+        <div class="mic-fab" id="micBtn">
+          <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.92V21h2v-3.08A7 7 0 0019 11h-2z"/></svg>
+        </div>
+        <div class="center-controls">
+          <span class="live"><span class="dot"></span>LIVE</span>
+          <span class="pause"><span class="dot"></span>PAUSE</span>
+          <span class="shutdown"><span class="dot"></span>SHUTDOWN</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: conversation log -->
+    <div class="colR">
+      <div class="panel convo" style="flex:1;">
+        <div class="plabel">Conversation <span id="convoStatus">READY</span></div>
+        <div class="convo-body" id="convoBody"></div>
+        <div class="cmdline">
+          <span class="caret">&gt;</span>
+          <input id="cmdInput" type="text" placeholder="komut yaz...">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottombar">
+    <div class="who"><div class="avatar"></div><span>Efendim</span></div>
+    <div>SYSTEM ONLINE</div>
+  </div>
+
+</div>
+
+<script>
+/* ===== saat / tarih ===== */
+const days = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+const months = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+function tick(){
+  const n = new Date();
+  document.getElementById('clockTime').textContent = String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('clockSec').textContent = String(n.getSeconds()).padStart(2,'0')+'s';
+  document.getElementById('clockDate').textContent = n.getDate()+' '+months[n.getMonth()]+' '+n.getFullYear()+' · '+days[n.getDay()];
+}
+tick(); setInterval(tick,1000);
+
+/* ===== hava durumu — demo (gerçek API bağlanabilir, ücretsiz: open-meteo.com) ===== */
+document.getElementById('wxTemp').textContent = '19°C';
+document.getElementById('wxCond').textContent = 'parçalı bulutlu';
+document.getElementById('wxExtra').textContent = 'nem %68';
+
+/* ===== konuşma günlüğü demo ===== */
+const convoBody = document.getElementById('convoBody');
+const seed = [
+  {who:'JARVIS', txt:'Sistem hazır efendim.', user:false},
+  {who:'SİZ', txt:'Jarvis, günaydın.', user:true},
+  {who:'JARVIS', txt:'Günaydın. Bugün 3 randevunuz var, ilki 09:30.', user:false},
+];
+function addMsg(who, txt, user){
+  const d = document.createElement('div');
+  d.className = 'msg' + (user ? ' user':'');
+  d.innerHTML = `<div class="who">${who}</div><div class="txt">${txt}</div>`;
+  convoBody.appendChild(d);
+  convoBody.scrollTop = convoBody.scrollHeight;
+}
+seed.forEach(m=>addMsg(m.who,m.txt,m.user));
+
+const cmdInput = document.getElementById('cmdInput');
+const convoStatus = document.getElementById('convoStatus');
+/* ===================================================================
+   JARVIS BEYNİ — Google Gemini ücretsiz API bağlantısı
+   ------------------------------------------------------------------
+   1) https://aistudio.google.com/apikey adresine git
+   2) Google hesabınla giriş yap, "Create API key" butonuna bas
+   3) Sana verilen anahtarı aşağıdaki GEMINI_API_KEY = "" kısmına yapıştır
+   =================================================================== */
+const GEMINI_API_KEY = "BURAYA_KENDİ_ÜCRETSİZ_API_ANAHTARINI_YAPIŞTIR";
+
+async function askJarvis(question){
+  if(GEMINI_API_KEY.includes("BURAYA")){
+    return 'API anahtarı henüz eklenmedi. Sohbetteki kurulum adımlarını takip et.';
+  }
+  try{
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text:
+              "Sen Jarvis adında, kullanıcının kişisel asistan koçusun. Türkçe, kısa, net ve samimi cevap ver. Kullanıcının sorusu: " + question
+            }]
+          }]
+        })
+      }
+    );
+    const data = await res.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Bir cevap alamadım, tekrar dener misin?';
+  }catch(err){
+    return 'Bağlantı hatası: internet bağlantını kontrol et.';
+  }
+}
+
+/* Sesli cevap: tarayıcının kendi ücretsiz Text-to-Speech'i */
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'tr-TR';
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utter);
+}
+
+cmdInput.addEventListener('keydown', async e=>{
+  if(e.key==='Enter' && cmdInput.value.trim()){
+    const q = cmdInput.value.trim();
+    addMsg('SİZ', q, true);
+    cmdInput.value=''; convoStatus.textContent='İŞLENİYOR'; thinking = true;
+    const answer = await askJarvis(q);
+    addMsg('JARVIS', answer, false);
+    speak(answer);
+    convoStatus.textContent='READY'; thinking = false;
+  }
+});
+
+/* ===== YILDIZLI GALAKSİ KÜRESİ ===== */
+const canvas = document.getElementById('starCanvas');
+const ctx = canvas.getContext('2d');
+let W,H,R;
+function resize(){
+  const rect = canvas.parentElement.getBoundingClientRect();
+  W = canvas.width = rect.width*devicePixelRatio;
+  H = canvas.height = rect.height*devicePixelRatio;
+  canvas.style.width = rect.width+'px'; canvas.style.height = rect.height+'px';
+  R = Math.min(W,H)*0.34;
+}
+resize(); window.addEventListener('resize',resize);
+
+/* ===== SYSTEM LOCKED tarzı plazma küre — referans görselin birebir kopyası =====
+   Dış parlayan halka + içinden geçen X şeklinde enerji çaprazı + dokulu plazma yüzeyi + JARVIS yazısı */
+
+let t0 = performance.now();
+let level = 0, targetLevel = 0;
+let rotAngle = 0;
+
+// arka plan uzayında dağınık toz parçacıkları (referanstaki gibi)
+const DUST_COUNT = 40;
+const dust = [];
+for(let i=0;i<DUST_COUNT;i++){
+  dust.push({
+    x: Math.random(), y: Math.random(),
+    size: 0.6+Math.random()*2.2,
+    twinklePhase: Math.random()*Math.PI*2,
+    twinkleSpeed: 0.5+Math.random()*1.5,
+  });
+}
+
+function draw(now){
+  const dt = (now-t0)/1000; t0 = now;
+  level += (targetLevel-level)*0.15;
+  rotAngle += dt*(0.15+level*0.6);
+
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2;
+  const baseR = R*devicePixelRatio;
+  const pulse = 1 + level*0.22 + Math.sin(now/1100)*0.025;
+  const rad = baseR*pulse;
+
+  // ---- arka plan toz parçacıkları ----
+  dust.forEach(d=>{
+    const px = d.x*W, py = d.y*H;
+    const tw = 0.4+0.6*Math.sin(now/600*d.twinkleSpeed+d.twinklePhase);
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(160,220,255,${0.18+tw*0.35})`;
+    ctx.shadowColor = 'rgba(160,220,255,0.8)';
+    ctx.shadowBlur = d.size*3;
+    ctx.arc(px,py, d.size*devicePixelRatio*0.6, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+
+  // ---- dış parlama (bloom) ----
+  const outerGlow = ctx.createRadialGradient(cx,cy,rad*0.5, cx,cy, rad*1.65);
+  outerGlow.addColorStop(0, `rgba(120,210,255,${0.28+level*0.22})`);
+  outerGlow.addColorStop(1, 'rgba(120,210,255,0)');
+  ctx.fillStyle = outerGlow;
+  ctx.beginPath(); ctx.arc(cx,cy,rad*1.65,0,Math.PI*2); ctx.fill();
+
+  // ---- plazma küre yüzeyi (dokulu, hareketli) ----
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx,cy,rad,0,Math.PI*2);
+  ctx.clip();
+
+  const plasmaGrad = ctx.createRadialGradient(cx,cy,0, cx,cy, rad);
+  plasmaGrad.addColorStop(0, `rgba(210,245,255,${0.5+level*0.3})`);
+  plasmaGrad.addColorStop(0.4, `rgba(90,190,255,${0.35+level*0.25})`);
+  plasmaGrad.addColorStop(0.75, `rgba(30,110,190,${0.28+level*0.2})`);
+  plasmaGrad.addColorStop(1, 'rgba(10,50,90,0.15)');
+  ctx.fillStyle = plasmaGrad;
+  ctx.fillRect(cx-rad,cy-rad,rad*2,rad*2);
+
+  // ince enerji filamentleri (yatay dalgalı çizgiler, plazma dokusu hissi)
+  ctx.strokeStyle = `rgba(180,235,255,${0.12+level*0.15})`;
+  ctx.lineWidth = 1*devicePixelRatio;
+  for(let i=-6;i<=6;i++){
+    ctx.beginPath();
+    for(let a=0;a<=Math.PI*2;a+=0.15){
+      const wob = Math.sin(a*3+now/700+i)*rad*0.05;
+      const rr = rad*(0.3+Math.abs(i)*0.09)+wob;
+      const px = cx+Math.cos(a+rotAngle*0.3)*rr;
+      const py = cy+Math.sin(a+rotAngle*0.3)*rr*0.96;
+      a===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ---- dış çember çizgisi (parlak ince halka) ----
+  ctx.beginPath();
+  ctx.arc(cx,cy,rad,0,Math.PI*2);
+  ctx.strokeStyle = `rgba(210,245,255,${0.8+level*0.2})`;
+  ctx.lineWidth = 2.2*devicePixelRatio;
+  ctx.shadowColor = 'rgba(160,225,255,1)';
+  ctx.shadowBlur = (14+level*20)*devicePixelRatio;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // ---- X şeklinde enerji çaprazı, kürenin dışına taşan ışık uçları ----
+  const armLen = rad*1.32;
+  const arms = [rotAngle*0.15+Math.PI/4, rotAngle*0.15+3*Math.PI/4, rotAngle*0.15+5*Math.PI/4, rotAngle*0.15+7*Math.PI/4];
+  arms.forEach(a=>{
+    const x2 = cx+Math.cos(a)*armLen;
+    const y2 = cy+Math.sin(a)*armLen;
+    const grad = ctx.createLinearGradient(cx,cy,x2,y2);
+    grad.addColorStop(0, `rgba(230,250,255,${0.9+level*0.1})`);
+    grad.addColorStop(0.55, `rgba(150,220,255,${0.5+level*0.3})`);
+    grad.addColorStop(1, 'rgba(150,220,255,0)');
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(x2,y2);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = (2+level*2)*devicePixelRatio;
+    ctx.shadowColor = 'rgba(200,240,255,1)';
+    ctx.shadowBlur = (10+level*18)*devicePixelRatio;
+    ctx.stroke();
+  });
+  ctx.shadowBlur = 0;
+
+  // merkez çekirdek parlaması
+  const coreGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,rad*0.22);
+  coreGrad.addColorStop(0, `rgba(255,255,255,${0.9+level*0.1})`);
+  coreGrad.addColorStop(1, 'rgba(150,220,255,0)');
+  ctx.fillStyle = coreGrad;
+  ctx.beginPath(); ctx.arc(cx,cy,rad*0.22,0,Math.PI*2); ctx.fill();
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+/* ===== mikrofon ===== */
+const micBtn = document.getElementById('micBtn');
+let audioCtx, analyser, dataArray, rafId, stream, listening=false;
+async function startListening(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser(); analyser.fftSize=256;
+    source.connect(analyser);
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    micBtn.classList.add('live');
+    sample();
+  }catch(err){ addMsg('JARVIS','Mikrofon izni verilmedi.',false); }
+}
+function sample(){
+  analyser.getByteFrequencyData(dataArray);
+  const avg = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+  targetLevel = Math.min(avg/60,1); // daha hassas: konuşunca efekt daha belirgin
+  rafId = requestAnimationFrame(sample);
+}
+function stopListening(){
+  if(rafId) cancelAnimationFrame(rafId);
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  if(audioCtx) audioCtx.close();
+  micBtn.classList.remove('live');
+  targetLevel = 0;
+}
+micBtn.addEventListener('click', ()=>{
+  listening = !listening;
+  listening ? startListening() : stopListening();
+});
+
+/* ===== Konuşarak komut verme (Web Speech Recognition — ücretsiz, Chrome) ===== */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SpeechRecognition){
+  const recog = new SpeechRecognition();
+  recog.lang = 'tr-TR';
+  recog.continuous = false;
+  recog.onresult = async (e)=>{
+    const q = e.results[0][0].transcript;
+    addMsg('SİZ', q, true);
+    convoStatus.textContent='İŞLENİYOR'; thinking = true;
+    const answer = await askJarvis(q);
+    addMsg('JARVIS', answer, false);
+    speak(answer);
+    convoStatus.textContent='READY'; thinking = false;
+  };
+  recog.onend = ()=>{ if(listening){ recog.start(); } }; // sürekli dinleme
+  micBtn.addEventListener('click', ()=>{
+    if(listening){ recog.start(); } else { recog.stop(); }
+  });
+}
+</script>
+</body>
+</html>
