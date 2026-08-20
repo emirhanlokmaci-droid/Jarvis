@@ -32,13 +32,22 @@
   .app{ position:relative; height:100vh; width:100vw; display:flex; flex-direction:column; padding:14px; gap:10px; }
 
   /* ===== title ===== */
-  .title{ text-align:center; }
+  .title{ text-align:center; position:relative; }
   .title .mark{
     font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:8px;
     font-size: clamp(16px,2vw,24px); color:var(--cyan-bright);
     text-shadow:0 0 12px rgba(111,233,216,0.6);
   }
   .title .sub{ font-size:9px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-top:2px; }
+
+  /* API Ayar Butonu */
+  .api-settings-btn{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    background:rgba(111,233,216,0.1); border:1px solid var(--line);
+    color:var(--cyan); padding:4px 8px; font-family:'Share Tech Mono', monospace;
+    font-size:10px; cursor:pointer; border-radius:3px; letter-spacing:1px;
+  }
+  .api-settings-btn:hover{ background:rgba(111,233,216,0.25); }
 
   /* ===== main grid ===== */
   .main{
@@ -54,8 +63,7 @@
     position:relative; border:1px solid var(--line); background:var(--panel-bg);
     padding:10px 12px; backdrop-filter: blur(4px);
   }
-  .panel::before, .panel::after,
-  .panel .c2::before, .panel .c2::after{
+  .panel::before, .panel::after{
     content:''; position:absolute; width:10px; height:10px; border-color:var(--cyan); border-style:solid; border-width:0;
   }
   .panel::before{ top:-1px; left:-1px; border-top-width:2px; border-left-width:2px; }
@@ -115,8 +123,6 @@
   .center-controls .dot{ width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:5px; }
   .center-controls .live{ color:var(--green); }
   .center-controls .live .dot{ background:var(--green); box-shadow:0 0 6px var(--green); animation:blink 1.4s infinite; }
-  .center-controls .pause .dot{ background:var(--text-dim); }
-  .center-controls .shutdown .dot{ background:var(--red); }
   @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
   .center-controls span{ display:flex; align-items:center; cursor:pointer; }
 
@@ -153,6 +159,28 @@
   }
   .cmdline input::placeholder{ color:var(--text-dim); }
 
+  /* ===== modal (API Key Input) ===== */
+  .modal-backdrop{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8);
+    backdrop-filter:blur(4px); z-index:99; align-items:center; justify-content:center;
+  }
+  .modal{
+    width:90%; max-width:400px; background:#060e12; border:1px solid var(--cyan);
+    padding:18px; box-shadow:0 0 20px rgba(111,233,216,0.25);
+  }
+  .modal h3{ font-family:'Orbitron',sans-serif; font-size:13px; color:var(--cyan-bright); margin-bottom:8px; }
+  .modal p{ font-size:11px; color:var(--text-dim); margin-bottom:12px; }
+  .modal input{
+    width:100%; background:rgba(111,233,216,0.05); border:1px solid var(--line);
+    color:var(--text); padding:8px; font-family:'Share Tech Mono', monospace; font-size:12px; margin-bottom:12px; outline:none;
+  }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:8px; }
+  .modal-actions button{
+    background:transparent; border:1px solid var(--line); color:var(--text);
+    padding:6px 12px; cursor:pointer; font-family:'Share Tech Mono', monospace; font-size:11px;
+  }
+  .modal-actions button.save{ background:rgba(111,233,216,0.15); border-color:var(--cyan); color:var(--cyan); }
+
   /* ===== bottom bar ===== */
   .bottombar{
     display:flex; justify-content:space-between; align-items:center;
@@ -176,6 +204,7 @@
   <div class="title">
     <div class="mark">J.A.R.V.I.S.</div>
     <div class="sub">Just A Rather Very Intelligent System</div>
+    <button class="api-settings-btn" id="openSettingsBtn">⚙ AYARLAR</button>
   </div>
 
   <div class="main">
@@ -230,8 +259,6 @@
         </div>
         <div class="center-controls">
           <span class="live"><span class="dot"></span>LIVE</span>
-          <span class="pause"><span class="dot"></span>PAUSE</span>
-          <span class="shutdown"><span class="dot"></span>SHUTDOWN</span>
         </div>
       </div>
     </div>
@@ -256,6 +283,19 @@
 
 </div>
 
+<!-- API KEY MODAL -->
+<div class="modal-backdrop" id="keyModal">
+  <div class="modal">
+    <h3>GEMINI API AYARI</h3>
+    <p>API anahtarınız cihazınızın kendi hafızasında güvenle saklanır, internete veya GitHub'a yüklenmez.</p>
+    <input type="password" id="apiKeyInput" placeholder="AIzaSy... (API anahtarınızı yapıştırın)">
+    <div class="modal-actions">
+      <button id="closeModalBtn">Kapat</button>
+      <button class="save" id="saveKeyBtn">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ===== saat / tarih ===== */
 const days = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
@@ -268,17 +308,15 @@ function tick(){
 }
 tick(); setInterval(tick,1000);
 
-/* ===== hava durumu — demo (gerçek API bağlanabilir, ücretsiz: open-meteo.com) ===== */
+/* ===== hava durumu ===== */
 document.getElementById('wxTemp').textContent = '19°C';
 document.getElementById('wxCond').textContent = 'parçalı bulutlu';
 document.getElementById('wxExtra').textContent = 'nem %68';
 
-/* ===== konuşma günlüğü demo ===== */
+/* ===== konuşma günlüğü ===== */
 const convoBody = document.getElementById('convoBody');
 const seed = [
-  {who:'JARVIS', txt:'Sistem hazır efendim.', user:false},
-  {who:'SİZ', txt:'Jarvis, günaydın.', user:true},
-  {who:'JARVIS', txt:'Günaydın. Bugün 3 randevunuz var, ilki 09:30.', user:false},
+  {who:'JARVIS', txt:'Sistem hazır efendim.', user:false}
 ];
 function addMsg(who, txt, user){
   const d = document.createElement('div');
@@ -289,24 +327,44 @@ function addMsg(who, txt, user){
 }
 seed.forEach(m=>addMsg(m.who,m.txt,m.user));
 
+/* ===== API ANAHTARI YÖNETİMİ (localStorage) ===== */
+const keyModal = document.getElementById('keyModal');
+const openSettingsBtn = document.getElementById('openSettingsBtn');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const saveKeyBtn = document.getElementById('saveKeyBtn');
+const apiKeyInput = document.getElementById('apiKeyInput');
+
+openSettingsBtn.addEventListener('click', ()=>{
+  apiKeyInput.value = localStorage.getItem('JARVIS_GEMINI_KEY') || '';
+  keyModal.style.display = 'flex';
+});
+closeModalBtn.addEventListener('click', ()=>{ keyModal.style.display = 'none'; });
+saveKeyBtn.addEventListener('click', ()=>{
+  const key = apiKeyInput.value.trim();
+  if(key){
+    localStorage.setItem('JARVIS_GEMINI_KEY', key);
+    addMsg('JARVIS', 'API anahtarınız cihaza başarıyla kaydedildi efendim.', false);
+  }
+  keyModal.style.display = 'none';
+});
+
+function getApiKey(){
+  return localStorage.getItem('JARVIS_GEMINI_KEY');
+}
+
+/* ===== GEMINI İSTEK FONKSİYONU ===== */
 const cmdInput = document.getElementById('cmdInput');
 const convoStatus = document.getElementById('convoStatus');
-/* ===================================================================
-   JARVIS BEYNİ — Google Gemini ücretsiz API bağlantısı
-   ------------------------------------------------------------------
-   1) https://aistudio.google.com/apikey adresine git
-   2) Google hesabınla giriş yap, "Create API key" butonuna bas
-   3) Sana verilen anahtarı aşağıdaki GEMINI_API_KEY = "" kısmına yapıştır
-   =================================================================== */
-const GEMINI_API_KEY = "AQ.Ab8RN6IH5KPsq6e_yZJatO3BiV3ceIwpGXycPL4BZltAP53GeA";
 
 async function askJarvis(question){
-  if(GEMINI_API_KEY.includes("BURAYA")){
-    return 'API anahtarı henüz eklenmedi. Sohbetteki kurulum adımlarını takip et.';
+  const key = getApiKey();
+  if(!key){
+    keyModal.style.display = 'flex';
+    return 'Lütfen sağ üstteki "AYARLAR" butonuna tıklayıp Gemini API anahtarınızı girin efendim.';
   }
   try{
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -320,13 +378,16 @@ async function askJarvis(question){
       }
     );
     const data = await res.json();
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Bir cevap alamadım, tekrar dener misin?';
+    if(data.error){
+      return 'Hata oluştu: ' + (data.error.message || 'API anahtarınızı kontrol edin.');
+    }
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Bir cevap alamadım, tekrar dener misiniz?';
   }catch(err){
-    return 'Bağlantı hatası: internet bağlantını kontrol et.';
+    return 'Bağlantı hatası: internet bağlantınızı kontrol edin.';
   }
 }
 
-/* Sesli cevap: tarayıcının kendi ücretsiz Text-to-Speech'i */
+/* Sesli cevap (TTS) */
 function speak(text){
   if(!('speechSynthesis' in window)) return;
   const utter = new SpeechSynthesisUtterance(text);
@@ -339,15 +400,15 @@ cmdInput.addEventListener('keydown', async e=>{
   if(e.key==='Enter' && cmdInput.value.trim()){
     const q = cmdInput.value.trim();
     addMsg('SİZ', q, true);
-    cmdInput.value=''; convoStatus.textContent='İŞLENİYOR'; thinking = true;
+    cmdInput.value=''; convoStatus.textContent='İŞLENİYOR';
     const answer = await askJarvis(q);
     addMsg('JARVIS', answer, false);
     speak(answer);
-    convoStatus.textContent='READY'; thinking = false;
+    convoStatus.textContent='READY';
   }
 });
 
-/* ===== YILDIZLI GALAKSİ KÜRESİ ===== */
+/* ===== GÖRSEL EFEKT (CANVAS) ===== */
 const canvas = document.getElementById('starCanvas');
 const ctx = canvas.getContext('2d');
 let W,H,R;
@@ -360,14 +421,9 @@ function resize(){
 }
 resize(); window.addEventListener('resize',resize);
 
-/* ===== SYSTEM LOCKED tarzı plazma küre — referans görselin birebir kopyası =====
-   Dış parlayan halka + içinden geçen X şeklinde enerji çaprazı + dokulu plazma yüzeyi + JARVIS yazısı */
-
 let t0 = performance.now();
 let level = 0, targetLevel = 0;
 let rotAngle = 0;
-
-// arka plan uzayında dağınık toz parçacıkları (referanstaki gibi)
 const DUST_COUNT = 40;
 const dust = [];
 for(let i=0;i<DUST_COUNT;i++){
@@ -390,7 +446,6 @@ function draw(now){
   const pulse = 1 + level*0.22 + Math.sin(now/1100)*0.025;
   const rad = baseR*pulse;
 
-  // ---- arka plan toz parçacıkları ----
   dust.forEach(d=>{
     const px = d.x*W, py = d.y*H;
     const tw = 0.4+0.6*Math.sin(now/600*d.twinkleSpeed+d.twinklePhase);
@@ -403,14 +458,12 @@ function draw(now){
   });
   ctx.shadowBlur = 0;
 
-  // ---- dış parlama (bloom) ----
   const outerGlow = ctx.createRadialGradient(cx,cy,rad*0.5, cx,cy, rad*1.65);
   outerGlow.addColorStop(0, `rgba(120,210,255,${0.28+level*0.22})`);
   outerGlow.addColorStop(1, 'rgba(120,210,255,0)');
   ctx.fillStyle = outerGlow;
   ctx.beginPath(); ctx.arc(cx,cy,rad*1.65,0,Math.PI*2); ctx.fill();
 
-  // ---- plazma küre yüzeyi (dokulu, hareketli) ----
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx,cy,rad,0,Math.PI*2);
@@ -424,7 +477,6 @@ function draw(now){
   ctx.fillStyle = plasmaGrad;
   ctx.fillRect(cx-rad,cy-rad,rad*2,rad*2);
 
-  // ince enerji filamentleri (yatay dalgalı çizgiler, plazma dokusu hissi)
   ctx.strokeStyle = `rgba(180,235,255,${0.12+level*0.15})`;
   ctx.lineWidth = 1*devicePixelRatio;
   for(let i=-6;i<=6;i++){
@@ -440,7 +492,6 @@ function draw(now){
   }
   ctx.restore();
 
-  // ---- dış çember çizgisi (parlak ince halka) ----
   ctx.beginPath();
   ctx.arc(cx,cy,rad,0,Math.PI*2);
   ctx.strokeStyle = `rgba(210,245,255,${0.8+level*0.2})`;
@@ -450,7 +501,6 @@ function draw(now){
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // ---- X şeklinde enerji çaprazı, kürenin dışına taşan ışık uçları ----
   const armLen = rad*1.32;
   const arms = [rotAngle*0.15+Math.PI/4, rotAngle*0.15+3*Math.PI/4, rotAngle*0.15+5*Math.PI/4, rotAngle*0.15+7*Math.PI/4];
   arms.forEach(a=>{
@@ -471,7 +521,6 @@ function draw(now){
   });
   ctx.shadowBlur = 0;
 
-  // merkez çekirdek parlaması
   const coreGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,rad*0.22);
   coreGrad.addColorStop(0, `rgba(255,255,255,${0.9+level*0.1})`);
   coreGrad.addColorStop(1, 'rgba(150,220,255,0)');
@@ -482,9 +531,10 @@ function draw(now){
 }
 requestAnimationFrame(draw);
 
-/* ===== mikrofon ===== */
+/* ===== MİKROFON & SES ANALİZİ ===== */
 const micBtn = document.getElementById('micBtn');
 let audioCtx, analyser, dataArray, rafId, stream, listening=false;
+
 async function startListening(){
   try{
     stream = await navigator.mediaDevices.getUserMedia({audio:true});
@@ -495,12 +545,12 @@ async function startListening(){
     dataArray = new Uint8Array(analyser.frequencyBinCount);
     micBtn.classList.add('live');
     sample();
-  }catch(err){ addMsg('JARVIS','Mikrofon izni verilmedi.',false); }
+  }catch(err){ addMsg('JARVIS','Mikrofon izni verilmedi efendim.',false); }
 }
 function sample(){
   analyser.getByteFrequencyData(dataArray);
   const avg = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-  targetLevel = Math.min(avg/60,1); // daha hassas: konuşunca efekt daha belirgin
+  targetLevel = Math.min(avg/60,1);
   rafId = requestAnimationFrame(sample);
 }
 function stopListening(){
@@ -515,7 +565,7 @@ micBtn.addEventListener('click', ()=>{
   listening ? startListening() : stopListening();
 });
 
-/* ===== Konuşarak komut verme (Web Speech Recognition — ücretsiz, Chrome) ===== */
+/* ===== SES TANIMA (Web Speech Recognition) ===== */
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
   const recog = new SpeechRecognition();
@@ -524,13 +574,13 @@ if(SpeechRecognition){
   recog.onresult = async (e)=>{
     const q = e.results[0][0].transcript;
     addMsg('SİZ', q, true);
-    convoStatus.textContent='İŞLENİYOR'; thinking = true;
+    convoStatus.textContent='İŞLENİYOR';
     const answer = await askJarvis(q);
     addMsg('JARVIS', answer, false);
     speak(answer);
-    convoStatus.textContent='READY'; thinking = false;
+    convoStatus.textContent='READY';
   };
-  recog.onend = ()=>{ if(listening){ recog.start(); } }; // sürekli dinleme
+  recog.onend = ()=>{ if(listening){ recog.start(); } };
   micBtn.addEventListener('click', ()=>{
     if(listening){ recog.start(); } else { recog.stop(); }
   });
