@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>J.A.R.V.I.S. — Personal Intelligence System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#02070a; --cyan:#76f5ff; --cyan2:#1bc8dd; --blue:#5e9dff;
+  --white:#eaffff; --dim:#64858d; --line:rgba(118,245,255,.26);
+  --panel:rgba(3,16,22,.48); --green:#74ffb0; --amber:#ffd45e; --red:#ff6374;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;width:100%;overflow:hidden}
+body{
+  color:var(--white);font-family:"Share Tech Mono",monospace;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(18,104,125,.18),transparent 31%),
+    radial-gradient(circle at 50% 50%,#06151a 0,#02070a 67%);
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.13;
+  background:
+    linear-gradient(rgba(118,245,255,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(118,245,255,.06) 1px,transparent 1px);
+  background-size:50px 50px;
+  mask-image:radial-gradient(circle at center,#000,transparent 78%);
+}
+.app{height:100vh;width:100vw;display:flex;flex-direction:column;padding:14px;gap:9px}
+.header{height:48px;display:flex;align-items:center;justify-content:center;position:relative}
+.logo{
+  font:700 clamp(18px,2.2vw,28px) "Orbitron";letter-spacing:9px;
+  text-shadow:0 0 10px var(--cyan),0 0 35px rgba(68,207,255,.5)
+}
+.subtitle{position:absolute;top:31px;font-size:7px;letter-spacing:3px;color:var(--dim)}
+.header-right{position:absolute;right:3px;display:flex;gap:7px}
+.hbtn{
+  padding:7px 9px;color:var(--cyan);border:1px solid var(--line);
+  background:rgba(118,245,255,.04);font:9px "Share Tech Mono";cursor:pointer
+}
+.hbtn:hover{background:rgba(118,245,255,.12)}
+
+.main{
+  flex:1;min-height:0;display:grid;
+  grid-template-columns:minmax(195px,255px) 1fr minmax(245px,310px);gap:13px
+}
+.side{display:flex;flex-direction:column;gap:11px;min-height:0}
+.panel{
+  position:relative;padding:11px;border:1px solid var(--line);
+  background:linear-gradient(135deg,rgba(7,27,34,.55),rgba(2,10,14,.34));
+  backdrop-filter:blur(8px);box-shadow:inset 0 0 25px rgba(76,226,255,.025)
+}
+.panel:before,.panel:after{content:"";position:absolute;width:11px;height:11px}
+.panel:before{top:-1px;left:-1px;border-top:2px solid var(--cyan);border-left:2px solid var(--cyan)}
+.panel:after{bottom:-1px;right:-1px;border-bottom:2px solid var(--cyan);border-right:2px solid var(--cyan)}
+.label{display:flex;justify-content:space-between;color:var(--cyan);font-size:8px;letter-spacing:2px;margin-bottom:8px}
+.clock{font:600 clamp(32px,4vw,44px) "Orbitron";letter-spacing:2px}
+.date{margin-top:6px;color:var(--dim);font-size:9px}
+.temp{font:600 30px "Orbitron"}
+.place{color:var(--dim);font-size:8px;letter-spacing:2px;margin-top:3px}
+.condition{font-size:10px;margin-top:8px}
+.weather-extra{color:var(--dim);font-size:8px;margin-top:4px}
+.metrics{display:grid;gap:9px}
+.metric-head{display:flex;justify-content:space-between;color:var(--dim);font-size:8px;margin-bottom:3px}
+.bar{height:4px;background:rgba(118,245,255,.04);border:1px solid rgba(118,245,255,.11)}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan2),var(--cyan));box-shadow:0 0 8px rgba(118,245,255,.35)}
+.fill.green{background:linear-gradient(90deg,#25c78b,var(--green))}
+.fill.amber{background:linear-gradient(90deg,#d79b32,var(--amber))}
+.netline{display:flex;justify-content:space-between;color:var(--dim);font-size:8px;margin-top:10px}
+.signal{display:flex;align-items:flex-end;gap:3px;height:12px}.signal i{width:3px;background:var(--cyan)}
+.signal i:nth-child(1){height:3px}.signal i:nth-child(2){height:6px}.signal i:nth-child(3){height:9px}.signal i:nth-child(4){height:12px}
+
+.modules{flex:1;min-height:0}
+.module-list{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.module{
+  border:1px solid rgba(118,245,255,.12);padding:7px;color:var(--dim);
+  font-size:8px;letter-spacing:1px;background:rgba(118,245,255,.025)
+}
+.module.active{color:var(--cyan);border-color:rgba(118,245,255,.35);box-shadow:inset 0 0 12px rgba(118,245,255,.05)}
+
+.center{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+.stage{
+  position:relative;width:min(67vw,70vh,570px);height:min(67vw,70vh,570px);
+  display:flex;align-items:center;justify-content:center
+}
+#core{position:absolute;inset:0;width:100%;height:100%}
+.core-name{
+  position:absolute;z-index:4;font:700 clamp(17px,2.5vw,30px) "Orbitron";
+  letter-spacing:7px;text-shadow:0 0 8px #fff,0 0 20px var(--cyan),0 0 45px rgba(66,176,255,.75)
+}
+.core-state{
+  position:absolute;top:59%;z-index:5;font-size:8px;letter-spacing:3px;color:var(--cyan);
+  text-shadow:0 0 8px var(--cyan)
+}
+.voice{
+  position:absolute;bottom:7px;z-index:6;font-size:8px;letter-spacing:2px;color:var(--dim)
+}
+.voice b{font-weight:normal;color:var(--green)} .voice b.active{color:var(--cyan);text-shadow:0 0 8px var(--cyan)}
+.activate{
+  position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);z-index:7;
+  border:1px solid var(--line);background:rgba(3,18,23,.75);color:var(--cyan);
+  padding:5px 9px;font:8px "Share Tech Mono";letter-spacing:2px;cursor:pointer
+}
+.activate.active{background:rgba(118,245,255,.12);box-shadow:0 0 18px rgba(118,245,255,.25)}
+
+.right{min-height:0}
+.log{height:100%;display:flex;flex-direction:column}
+.messages{flex:1;min-height:0;overflow:auto;padding-right:4px}
+.messages::-webkit-scrollbar{width:3px}.messages::-webkit-scrollbar-thumb{background:var(--line)}
+.msg{font-size:10px;line-height:1.5;margin-bottom:12px}
+.msg .who{font-size:8px;letter-spacing:2px;color:var(--cyan);margin-bottom:3px}.msg.user .who{color:var(--dim)}
+.msg.user .text{color:#8eaab0}.msg .text{white-space:pre-wrap}
+.cmd{display:flex;gap:7px;border-top:1px solid rgba(118,245,255,.16);padding-top:8px;margin-top:6px}
+.cmd span{color:var(--cyan)} .cmd input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--white);font:10px "Share Tech Mono"}
+.cmd input::placeholder{color:#42636a}
+
+.memory{margin-top:8px;border-top:1px solid rgba(118,245,255,.12);padding-top:8px}
+.memory-title{display:flex;justify-content:space-between;font-size:8px;color:var(--cyan);letter-spacing:2px}
+.memory-item{display:flex;justify-content:space-between;gap:8px;margin-top:5px;color:var(--dim);font-size:8px}
+.memory-item button{border:0;background:none;color:var(--red);cursor:pointer;font:8px "Share Tech Mono"}
+
+.footer{height:17px;display:flex;justify-content:space-between;color:var(--dim);font-size:8px;letter-spacing:1px}
+.online{color:var(--green)}
+
+.modal-bg{
+  display:none;position:fixed;z-index:50;inset:0;background:rgba(0,0,0,.78);
+  backdrop-filter:blur(7px);align-items:center;justify-content:center
+}
+.modal{
+  width:min(92vw,450px);padding:18px;border:1px solid var(--cyan);
+  background:#041116;box-shadow:0 0 40px rgba(118,245,255,.18)
+}
+.modal h2{font:600 14px "Orbitron";color:var(--cyan);margin-bottom:8px}
+.modal p{font-size:9px;color:var(--dim);line-height:1.65;margin-bottom:12px}
+.modal input,.modal textarea{
+  width:100%;background:#02090d;border:1px solid var(--line);outline:0;
+  color:var(--white);padding:9px;font:10px "Share Tech Mono";margin-bottom:8px
+}
+.modal textarea{resize:vertical;min-height:70px}
+.actions{display:flex;justify-content:flex-end;gap:7px;margin-top:4px}
+.actions button{
+  padding:7px 12px;background:transparent;border:1px solid var(--line);
+  color:var(--white);font:9px "Share Tech Mono";cursor:pointer
+}
+.actions .save{color:var(--cyan);border-color:var(--cyan);background:rgba(118,245,255,.08)}
+
+@media(max-width:900px){
+  .app{padding:8px;gap:6px}.header{height:40px}.logo{font-size:16px;letter-spacing:6px}
+  .subtitle{top:27px;font-size:5px}.header-right .hbtn{padding:5px 6px;font-size:7px}
+  .main{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;gap:6px}
+  .side.left{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .left .system,.left .modules{display:none}.stage{width:min(84vw,59vh);height:min(84vw,59vh)}
+  .right{height:155px}.log{height:155px}.footer{display:none}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+<header class="header">
+  <div>
+    <div class="logo">J.A.R.V.I.S.</div>
+    <div class="subtitle">PERSONAL INTELLIGENCE SYSTEM</div>
+  </div>
+  <div class="header-right">
+    <button class="hbtn" id="memoryBtn">◈ MEMORY</button>
+    <button class="hbtn" id="settingsBtn">⚙ SETTINGS</button>
+  </div>
+</header>
+
+<main class="main">
+
+<section class="side left">
+  <div class="panel">
+    <div class="label"><span>LOCAL TIME</span><span id="seconds">00</span></div>
+    <div class="clock" id="clock">--:--</div>
+    <div class="date" id="date">--</div>
+  </div>
+
+  <div class="panel">
+    <div class="label"><span>ATMOSPHERE</span><span>IST</span></div>
+    <div class="temp" id="temp">--°C</div>
+    <div class="place">İSTANBUL / TÜRKİYE</div>
+    <div class="condition" id="condition">DATA LINK...</div>
+    <div class="weather-extra" id="weatherExtra">--</div>
+  </div>
+
+  <div class="panel system">
+    <div class="label"><span>SYSTEM TELEMETRY</span><span id="systemState">ONLINE</span></div>
+    <div class="metrics">
+      <div><div class="metric-head"><span>BATTERY</span><span id="batteryValue">--</span></div><div class="bar"><div class="fill green" id="batteryBar"></div></div></div>
+      <div><div class="metric-head"><span>NETWORK</span><span id="networkValue">--</span></div><div class="bar"><div class="fill" id="networkBar"></div></div></div>
+      <div><div class="metric-head"><span>VOICE CORE</span><span id="voiceValue">STANDBY</span></div><div class="bar"><div class="fill amber" id="voiceBar"></div></div></div>
+      <div><div class="metric-head"><span>AI CORE</span><span id="aiValue">READY</span></div><div class="bar"><div class="fill" id="aiBar" style="width:92%"></div></div></div>
+    </div>
+    <div class="netline"><span id="connection">CONNECTING</span><span class="signal"><i></i><i></i><i></i><i></i></span></div>
+  </div>
+
+  <div class="panel modules">
+    <div class="label"><span>ACTIVE MODULES</span><span>04</span></div>
+    <div class="module-list">
+      <div class="module active">AI CORE</div><div class="module active">VOICE</div>
+      <div class="module active">WEATHER</div><div class="module active">MEMORY</div>
+      <div class="module">TIMER</div><div class="module">TOOLS</div>
+    </div>
+  </div>
+</section>
+
+<section class="center">
+  <div class="stage">
+    <canvas id="core"></canvas>
+    <div class="core-name">JARVIS</div>
+    <div class="core-state" id="coreState">STANDBY</div>
+    <div class="voice">VOICE CORE: <b id="voiceStatus">STANDBY</b></div>
+    <button class="activate" id="voiceBtn">ACTIVATE VOICE</button>
+  </div>
+</section>
+
+<section class="side right">
+  <div class="panel log">
+    <div class="label"><span>JARVIS LOG</span><span id="status">READY</span></div>
+    <div class="messages" id="messages"></div>
+    <div class="cmd"><span>&gt;</span><input id="cmd" placeholder="Komut yaz..." autocomplete="off"></div>
+    <div class="memory" id="memoryPanel" style="display:none">
+      <div class="memory-title"><span>MEMORY CORE</span><span id="memoryCount">0</span></div>
+      <div id="memoryList"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer"><span>PERSONAL INTELLIGENCE INTERFACE</span><span class="online">● SYSTEM ONLINE</span></footer>
+</div>
+
+<!-- AYARLAR -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <h2>JARVIS SYSTEM CONFIGURATION</h2>
+    <p>Gemini API anahtarını buradan ekleyebilirsin. Anahtar bu tarayıcının localStorage alanında tutulur. Gerçek bir uygulamada API anahtarını backend'de saklamak daha güvenlidir.</p>
+    <input id="apiKey" type="password" placeholder="Gemini API Key">
+    <input id="assistantName" placeholder="Sana nasıl hitap etsin? (ör. Emirhan)">
+    <textarea id="personality" placeholder="JARVIS için ek kişilik notları..."></textarea>
+    <div class="actions"><button id="closeSettings">KAPAT</button><button class="save" id="saveSettings">SAVE CONFIG</button></div>
+  </div>
+</div>
+
+<!-- HAFIZA -->
+<div class="modal-bg" id="memoryModal">
+  <div class="modal">
+    <h2>MEMORY CORE</h2>
+    <p>JARVIS'in hatırlamasını istediğin bilgileri burada tutabilirsin. Bunlar yalnızca bu tarayıcıda saklanır.</p>
+    <input id="memoryInput" placeholder="Örn: Kahveyi şekersiz seviyorum.">
+    <div class="actions"><button id="closeMemory">KAPAT</button><button class="save" id="saveMemory">REMEMBER</button></div>
+    <div id="modalMemoryList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   J.A.R.V.I.S. V2
+   Gemini + Voice + Memory + Weather + HUD
+   ========================================================= */
+
+const $=id=>document.getElementById(id);
+const KEY="JARVIS_GEMINI_KEY";
+const NAME_KEY="JARVIS_USER_NAME";
+const PERSONALITY_KEY="JARVIS_PERSONALITY";
+const MEMORY_KEY="JARVIS_MEMORY";
+
+function getMemories(){try{return JSON.parse(localStorage.getItem(MEMORY_KEY)||"[]")}catch{return[]}}
+function saveMemories(a){localStorage.setItem(MEMORY_KEY,JSON.stringify(a))}
+function getUserName(){return localStorage.getItem(NAME_KEY)||""}
+function getExtraPersonality(){return localStorage.getItem(PERSONALITY_KEY)||""}
+
+/* ---------- CLOCK ---------- */
+const days=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+const months=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+function clock(){
+  const d=new Date();
+  $("clock").textContent=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  $("seconds").textContent=String(d.getSeconds()).padStart(2,"0");
+  $("date").textContent=`${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · ${days[d.getDay()]}`;
+}
+clock();setInterval(clock,1000);
+
+/* ---------- WEATHER ---------- */
+async function weather(){
+  try{
+    const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=41.0082&longitude=28.9784&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe%2FIstanbul");
+    const d=await r.json(),c=d.current;
+    const map={0:"AÇIK",1:"ÇOĞUNLUKLA AÇIK",2:"PARÇALI BULUTLU",3:"KAPALI",45:"SİS",48:"SİS",51:"ÇİSENTİ",53:"ÇİSENTİ",55:"ÇİSENTİ",61:"YAĞMUR",63:"YAĞMUR",65:"KUVVETLİ YAĞMUR",71:"KAR",73:"KAR",75:"YOĞUN KAR",80:"SAĞANAK",81:"SAĞANAK",82:"KUVVETLİ SAĞANAK",95:"GÖK GÜRÜLTÜLÜ FIRTINA",96:"FIRTINA",99:"FIRTINA"};
+    $("temp").textContent=Math.round(c.temperature_2m)+"°C";
+    $("condition").textContent=map[c.weather_code]||"BİLİNMİYOR";
+    $("weatherExtra").textContent=`NEM %${Math.round(c.relative_humidity_2m)} · RÜZGAR ${Math.round(c.wind_speed_10m)} KM/H`;
+  }catch{
+    $("condition").textContent="WEATHER OFFLINE";$("weatherExtra").textContent="VERİ ALINAMADI";
+  }
+}
+weather();setInterval(weather,900000);
+
+/* ---------- MEMORY ---------- */
+function renderMemory(){
+  const arr=getMemories();
+  $("memoryCount").textContent=arr.length;
+  $("memoryList").innerHTML=arr.map((m,i)=>`<div class="memory-item"><span>${escapeHTML(m)}</span><button onclick="deleteMemory(${i})">DELETE</button></div>`).join("");
+  $("modalMemoryList").innerHTML=arr.map((m,i)=>`<div class="memory-item"><span>${escapeHTML(m)}</span><button onclick="deleteMemory(${i})">DELETE</button></div>`).join("");
+}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+window.deleteMemory=i=>{const a=getMemories();a.splice(i,1);saveMemories(a);renderMemory()};
+$("memoryBtn").onclick=()=>{$("memoryModal").style.display="flex";renderMemory()};
+$("closeMemory").onclick=()=>{$("memoryModal").style.display="none"};
+$("saveMemory").onclick=()=>{
+  const v=$("memoryInput").value.trim();if(!v)return;
+  const a=getMemories();a.push(v);saveMemories(a);$("memoryInput").value="";renderMemory();
+};
+renderMemory();
+
+/* ---------- SETTINGS / API KEY ---------- */
+$("settingsBtn").onclick=()=>{
+  $("apiKey").value=localStorage.getItem(KEY)||"";
+  $("assistantName").value=getUserName();
+  $("personality").value=getExtraPersonality();
+  $("settingsModal").style.display="flex";
+};
+$("closeSettings").onclick=()=>{$("settingsModal").style.display="none"};
+$("saveSettings").onclick=()=>{
+  const k=$("apiKey").value.trim();
+  if(k)localStorage.setItem(KEY,k);else localStorage.removeItem(KEY);
+  localStorage.setItem(NAME_KEY,$("assistantName").value.trim());
+  localStorage.setItem(PERSONALITY_KEY,$("personality").value.trim());
+  $("settingsModal").style.display="none";
+  addMessage("JARVIS","Sistem yapılandırması güncellendi.",false);
+};
+
+/* ---------- CHAT ---------- */
+function addMessage(who,text,user=false){
+  const d=document.createElement("div");d.className="msg"+(user?" user":"");
+  const w=document.createElement("div");w.className="who";w.textContent=who;
+  const t=document.createElement("div");t.className="text";t.textContent=text;
+  d.append(w,t);$("messages").appendChild(d);$("messages").scrollTop=$("messages").scrollHeight;
+}
+addMessage("JARVIS","Sistem çevrimiçi. Kişisel asistan çekirdeği hazır.",false);
+
+/* ---------- JARVIS PERSONALITY ---------- */
+function buildSystemPrompt(){
+  const name=getUserName();
+  const memories=getMemories();
+  return `
+Sen J.A.R.V.I.S.'sin. Kullanıcının kişisel yapay zekâ asistanısın.
+
+TEMEL KİŞİLİK:
+- Zeki, sakin, sadık, güvenilir, doğal ve saygılı ol.
+- Kullanıcıya yardımcı ol; yapmacık ve aşırı robotik konuşma.
+- Marvel karakteri olduğunu veya Tony Stark olduğunu iddia etme.
+- Kullanıcıya yalnızca gerektiğinde "efendim" de. Her cümlede kullanma.
+- Türkçe konuş.
+- Basit sorulara kısa cevap ver. Teknik/karmaşık konularda yeterli ayrıntı ver.
+- Bilmediğin bilgiyi uydurma.
+- Kullanıcının talebini doğrudan anlamaya çalış.
+- Gereksiz uyarılarla cevabı boğma.
+${name?`Kullanıcının tercih ettiği adı: ${name}`:"Kullanıcı adı henüz ayarlanmadı."}
+
+HAFIZA:
+${memories.length?memories.map((m,i)=>`${i+1}. ${m}`).join("\n"):"Henüz kayıtlı hafıza yok."}
+
+EK KİŞİLİK NOTLARI:
+${getExtraPersonality()||"Yok."}
+
+KULLANICIYLA ETKİLEŞİM:
+- Kişisel asistan gibi davran.
+- Kullanıcı bir plan, çalışma düzeni veya görev istediğinde uygulanabilir öneriler sun.
+- Bir şey yapamayacaksan bunu netçe söyle ve mümkünse alternatif ver.
+`;
+}
+
+/* ---------- LOCAL COMMANDS ---------- */
+function localCommand(q){
+  const x=q.toLowerCase().trim();
+
+  if(x==="saat kaç"||x==="saat"){
+    return "Şu an saat "+$("clock").textContent+".";
+  }
+
+  if(x.includes("hava nasıl")||x.includes("hava durumu")){
+    return `İstanbul'da şu an ${$("temp").textContent}, durum ${$("condition").textContent.toLowerCase()}. ${$("weatherExtra").textContent}.`;
+  }
+
+  if(x.startsWith("hatırla ")||x.startsWith("unutma ")){
+    const memory=q.replace(/^(hatırla|unutma)\s+/i,"").trim();
+    if(memory){const a=getMemories();a.push(memory);saveMemories(a);renderMemory();return "Tamam. Bunu hafızama ekledim."}
+  }
+
+  if(x==="ne hatırlıyorsun"||x==="hafızanda ne var"){
+    const a=getMemories();return a.length?"Hatırladıklarım:\n"+a.map((m,i)=>`${i+1}. ${m}`).join("\n"):"Şimdilik kayıtlı bir bilgi yok.";
+  }
+
+  return null;
+}
+
+/* ---------- GEMINI ---------- */
+async function askJarvis(question){
+  const key=localStorage.getItem(KEY);
+  if(!key){
+    $("settingsModal").style.display="flex";
+    return "Gemini API anahtarı ayarlanmamış. Sağ üstteki SETTINGS bölümünden ekleyebilirsin.";
+  }
+
+  const local=localCommand(question);
+  if(local)return local;
+
+  $("status").textContent="THINKING";$("coreState").textContent="PROCESSING";$("aiBar").style.width="100%";
+
+  try{
+    const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        system_instruction:{parts:[{text:buildSystemPrompt()}]},
+        contents:[{role:"user",parts:[{text:question}]}],
+        generationConfig:{temperature:.65,maxOutputTokens:800}
+      })
+    });
+    const data=await response.json();
+    if(!response.ok||data.error){
+      console.error(data);
+      return "Gemini bağlantısında bir sorun oluştu. API anahtarını veya model erişimini kontrol et.";
+    }
+    return data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"Şu anda cevap oluşturamadım.";
+  }catch(e){
+    return "Gemini sunucusuna bağlanamadım. İnternet bağlantısını kontrol et.";
+  }finally{
+    $("status").textContent="READY";$("coreState").textContent="STANDBY";$("aiBar").style.width="92%";
+  }
+}
+
+/* ---------- TTS ---------- */
+let speaking=false;
+function speak(text){
+  if(!("speechSynthesis" in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang="tr-TR";u.rate=.96;u.pitch=.9;
+  u.onstart=()=>{speaking=true;$("coreState").textContent="SPEAKING";$("voiceStatus").textContent="SPEAKING"};
+  u.onend=()=>{speaking=false;$("coreState").textContent="STANDBY";$("voiceStatus").textContent=voiceEnabled?"READY":"STANDBY"};
+  speechSynthesis.speak(u);
+}
+
+/* ---------- PROCESS ---------- */
+let processing=false;
+async function processCommand(q){
+  if(!q||processing)return;
+  processing=true;
+  addMessage("YOU",q,true);
+  const answer=await askJarvis(q);
+  addMessage("JARVIS",answer,false);
+  speak(answer);
+  $("status").textContent="READY";$("coreState").textContent="STANDBY";
+  processing=false;
+}
+$("cmd").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){const q=$("cmd").value.trim();$("cmd").value="";processCommand(q)}
+});
+
+/* ---------- VOICE: MANUAL ACTIVATE ---------- */
+const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+let recognition=null,voiceEnabled=false;
+
+if(Recognition){
+  recognition=new Recognition();
+  recognition.lang="tr-TR";recognition.continuous=false;recognition.interimResults=false;recognition.maxAlternatives=1;
+  recognition.onstart=()=>{
+    $("voiceStatus").textContent="LISTENING";$("voiceStatus").classList.add("active");
+    $("voiceValue").textContent="LISTENING";$("voiceBar").style.width="88%";$("coreState").textContent="LISTENING";
+    $("voiceBtn").classList.add("active");$("voiceBtn").textContent="LISTENING...";
+  };
+  recognition.onresult=e=>{
+    const q=e.results[0][0].transcript.trim();if(q)processCommand(q);
+  };
+  recognition.onerror=()=>{
+    $("voiceStatus").textContent="ERROR";$("voiceValue").textContent="RETRY";$("voiceBar").style.width="30%";
+  };
+  recognition.onend=()=>{
+    if(voiceEnabled&&!speaking){
+      $("voiceStatus").textContent="READY";$("voiceStatus").classList.remove("active");
+      $("voiceValue").textContent="READY";$("voiceBar").style.width="55%";$("coreState").textContent="STANDBY";
+      $("voiceBtn").classList.remove("active");$("voiceBtn").textContent="ACTIVATE VOICE";
+    }
+  };
+}
+$("voiceBtn").onclick=()=>{
+  if(!recognition){
+    addMessage("JARVIS","Bu tarayıcı ses tanımayı desteklemiyor. Yazılı komut kullanabilirsin.",false);return;
+  }
+  if(voiceEnabled){
+    voiceEnabled=false;try{recognition.stop()}catch{}
+    $("voiceBtn").classList.remove("active");$("voiceBtn").textContent="ACTIVATE VOICE";
+    $("voiceStatus").textContent="STANDBY";$("voiceValue").textContent="STANDBY";$("voiceBar").style.width="12%";
+  }else{
+    voiceEnabled=true;try{recognition.start()}catch{}
+  }
+};
+
+/* ---------- TELEMETRY ---------- */
+async function telemetry(){
+  if(navigator.getBattery){
+    try{
+      const b=await navigator.getBattery();
+      const up=()=>{$("batteryValue").textContent=Math.round(b.level*100)+"%";$("batteryBar").style.width=(b.level*100)+"%"};
+      up();b.addEventListener("levelchange",up);
+    }catch{$("batteryValue").textContent="N/A"}
+  }
+  const online=navigator.onLine;
+  $("networkValue").textContent=online?"ONLINE":"OFFLINE";
+  $("networkBar").style.width=online?"96%":"10%";
+  $("connection").textContent=(navigator.connection?.effectiveType||"NETWORK").toUpperCase();
+}
+telemetry();setInterval(telemetry,10000);
+window.addEventListener("online",telemetry);window.addEventListener("offline",telemetry);
+
+/* ---------- CORE VISUAL ---------- */
+const canvas=$("core"),ctx=canvas.getContext("2d");
+let W=0,H=0,DPR=1,rot=0,pulse=0,targetPulse=0;
+function resize(){
+  const r=canvas.parentElement.getBoundingClientRect();
+  DPR=Math.min(devicePixelRatio||1,2);W=Math.floor(r.width*DPR);H=Math.floor(r.height*DPR);
+  canvas.width=W;canvas.height=H;
+}
+addEventListener("resize",resize);resize();
+
+function P(cx,cy,r,a){return[cx+Math.cos(a)*r,cy+Math.sin(a)*r]}
+function ring(cx,cy,r,a1,a2,w,alpha,dash=0){
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,a1,a2);ctx.strokeStyle=`rgba(118,245,255,${alpha})`;
+  ctx.lineWidth=w*DPR;if(dash)ctx.setLineDash([dash*DPR,dash*1.35*DPR]);
+  ctx.shadowColor="rgba(70,232,255,.75)";ctx.shadowBlur=w*3*DPR;ctx.stroke();ctx.restore();
+}
+function ticks(cx,cy,r,n,off){
+  for(let i=0;i<n;i++){
+    const a=Math.PI*2*i/n+off,long=i%5===0,p1=P(cx,cy,r-(long?13:7)*DPR,a),p2=P(cx,cy,r,a);
+    ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);
+    ctx.strokeStyle=i%19===0?`rgba(255,212,94,.9)`:`rgba(118,245,255,${long?.55:.22})`;
+    ctx.lineWidth=(long?1.5:.7)*DPR;ctx.stroke();
+  }
+}
+function drawCore(time){
+  const cx=W/2,cy=H/2,base=Math.min(W,H)*.265;
+  pulse+=(targetPulse-pulse)*.1;rot+=.0017*(1+pulse*3);
+  ctx.clearRect(0,0,W,H);
+
+  const bloom=ctx.createRadialGradient(cx,cy,base*.2,cx,cy,base*2.1);
+  bloom.addColorStop(0,`rgba(50,225,255,${.18+pulse*.15})`);bloom.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=bloom;ctx.fillRect(0,0,W,H);
+
+  ticks(cx,cy,base*1.78,96,-rot*.35);ticks(cx,cy,base*1.61,72,rot*.55);
+  ring(cx,cy,base*1.72,-2.55,-.35,3,.72);
+  ring(cx,cy,base*1.72,.35,2.2,2,.42);
+  ring(cx,cy,base*1.52,1.0+rot,3.9+rot,6,.52);
+  ring(cx,cy,base*1.52,-.15+rot,.72+rot,4,.8);
+
+  const plate=ctx.createRadialGradient(cx,cy,base*.05,cx,cy,base*1.4);
+  plate.addColorStop(0,"rgba(236,255,255,.17)");plate.addColorStop(.3,"rgba(65,203,242,.18)");
+  plate.addColorStop(.75,"rgba(20,86,140,.08)");plate.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=plate;ctx.beginPath();ctx.arc(cx,cy,base*1.36,0,Math.PI*2);ctx.fill();
+
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,base*1.32,0,Math.PI*2);ctx.clip();
+  for(let i=0;i<9;i++){
+    const rr=base*(.57+i*.085);
+    ctx.beginPath();ctx.arc(cx,cy,rr,rot*(i%2?1:-1),rot*(i%2?1:-1)+Math.PI*1.6);
+    ctx.strokeStyle=`rgba(155,240,255,${.08+i*.012})`;ctx.lineWidth=(1+i%3)*DPR;ctx.stroke();
+  }
+  ctx.strokeStyle="rgba(118,245,255,.075)";ctx.lineWidth=.7*DPR;
+  for(let i=0;i<18;i++){const a=Math.PI*2*i/18+rot,p1=P(cx,cy,base*.28,a),p2=P(cx,cy,base*1.27,a);ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);ctx.stroke()}
+  ctx.restore();
+
+  for(let i=0;i<10;i++)ring(cx,cy,base*1.29,-2.46+i*.072,-2.42+i*.072,4,.82);
+  ring(cx,cy,base*.82,0,Math.PI*2,3.2,.85);
+
+  const coreR=base*(.34+pulse*.035);
+  const cg=ctx.createRadialGradient(cx,cy,0,cx,cy,coreR);
+  cg.addColorStop(0,"rgba(255,255,255,.9)");cg.addColorStop(.17,"rgba(166,247,255,.52)");
+  cg.addColorStop(.5,"rgba(53,190,239,.18)");cg.addColorStop(1,"rgba(0,80,130,0)");
+  ctx.fillStyle=cg;ctx.beginPath();ctx.arc(cx,cy,coreR,0,Math.PI*2);ctx.fill();
+
+  for(let i=0;i<6;i++){
+    const a=rot*(i%2?-.7:.7)+Math.PI*2*i/6,p1=P(cx,cy,base*.38,a),p2=P(cx,cy,base*1.18,a);
+    const g=ctx.createLinearGradient(...p1,...p2);g.addColorStop(0,"rgba(240,255,255,.75)");
+    g.addColorStop(.5,"rgba(92,219,255,.3)");g.addColorStop(1,"rgba(92,219,255,0)");
+    ctx.strokeStyle=g;ctx.lineWidth=(1.3+pulse*2)*DPR;ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);ctx.stroke();
+  }
+  requestAnimationFrame(drawCore);
+}
+requestAnimationFrame(drawCore);
+
+/* Voice visualization uses a lightweight mic stream only after activation. */
+let audioContext=null,analyser=null,audioData=null,micStream=null;
+async function visualMic(){
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    audioContext=new(window.AudioContext||window.webkitAudioContext)();
+    const src=audioContext.createMediaStreamSource(micStream);
+    analyser=audioContext.createAnalyser();analyser.fftSize=256;src.connect(analyser);
+    audioData=new Uint8Array(analyser.frequencyBinCount);sampleAudio();
+  }catch{}
+}
+function sampleAudio(){
+  if(analyser){
+    analyser.getByteFrequencyData(audioData);
+    targetPulse=Math.min(audioData.reduce((a,b)=>a+b,0)/audioData.length/55,1);
+  }
+  requestAnimationFrame(sampleAudio);
+}
+$("voiceBtn").addEventListener("click",()=>{if(!analyser)visualMic()});
+</script>
+</body>
+</html>
