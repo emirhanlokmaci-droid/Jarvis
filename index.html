@@ -2,404 +2,85 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>JARVIS</title>
 <style>
-  :root {
-    --bg-color: #030813;
-    --primary-color: #00e5ff;
-    --primary-glow: rgba(0, 229, 255, 0.4);
-    --secondary-color: #0055ff;
-    --text-color: #d0f0fd;
-    --panel-bg: rgba(4, 16, 38, 0.65);
-    --panel-border: rgba(0, 229, 255, 0.3);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body { background: #000; color: #00e5ff; font-family: 'Orbitron', sans-serif; margin: 0; overflow: hidden; }
   
-  body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    font-family: 'Courier New', Courier, monospace;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-    background-image: 
-      radial-gradient(circle at 50% 50%, rgba(0, 85, 255, 0.1) 0%, transparent 80%),
-      linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
-    background-size: 100% 100%, 30px 30px, 30px 30px;
-  }
+  /* Ana HUD Yapısı */
+  .hud-container { display: flex; justify-content: space-between; align-items: center; height: 100vh; padding: 20px; }
+  
+  /* Ortadaki Şekil */
+  .center-orb { width: 400px; height: 400px; border: 3px solid #00e5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; animation: rotate 20s linear infinite; }
+  .center-orb::before { content: "J.A.R.V.I.S."; font-size: 2rem; letter-spacing: 5px; text-shadow: 0 0 15px #00e5ff; }
+  @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 25px;
-    border-bottom: 1px solid var(--panel-border);
-    background: var(--panel-bg);
-    backdrop-filter: blur(10px);
-  }
-
-  .logo {
-    font-size: 1.5rem;
-    font-weight: 900;
-    letter-spacing: 4px;
-    color: var(--primary-color);
-    text-shadow: 0 0 10px var(--primary-glow);
-  }
-
-  .status {
-    font-size: 0.85rem;
-    letter-spacing: 2px;
-    color: #00ff88;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    background: #00ff88;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #00ff88;
-    animation: blink 2s infinite;
-  }
-
-  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-  .settings-btn {
-    background: transparent;
-    border: 1px solid var(--panel-border);
-    color: var(--primary-color);
-    padding: 6px 14px;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 0.8rem;
-    letter-spacing: 1px;
-    transition: all 0.3s;
-    border-radius: 3px;
-  }
-  .settings-btn:hover {
-    background: var(--primary-glow);
-    box-shadow: 0 0 10px var(--primary-glow);
-  }
-
-  main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    gap: 20px;
-    position: relative;
-  }
-
-  #canvas-container {
-    position: relative;
-    width: 280px;
-    height: 280px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-
-  canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .orb-text {
-    position: absolute;
-    font-size: 0.8rem;
-    letter-spacing: 3px;
-    color: var(--primary-color);
-    text-shadow: 0 0 8px var(--primary-glow);
-    pointer-events: none;
-    text-align: center;
-  }
-
-  .panel {
-    width: 100%;
-    max-width: 600px;
-    background: var(--panel-bg);
-    border: 1px solid var(--panel-border);
-    padding: 15px;
-    border-radius: 4px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
-  }
-
-  .output-box {
-    height: 140px;
-    overflow-y: auto;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .msg-user { color: #fff; text-align: right; }
-  .msg-jarvis { color: var(--primary-color); }
-  .msg-system { color: #88a0b8; font-size: 0.8rem; font-style: italic; }
-
-  .input-group {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-    max-width: 600px;
-  }
-
-  input[type="text"] {
-    flex: 1;
-    background: rgba(4, 16, 38, 0.8);
-    border: 1px solid var(--panel-border);
-    color: #fff;
-    padding: 12px 16px;
-    font-family: inherit;
-    font-size: 0.95rem;
-    outline: none;
-    border-radius: 3px;
-  }
-  input[type="text"]:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 10px var(--primary-glow);
-  }
-
-  button.send-btn {
-    background: var(--primary-color);
-    border: none;
-    color: #030813;
-    font-weight: bold;
-    padding: 0 20px;
-    font-family: inherit;
-    cursor: pointer;
-    border-radius: 3px;
-    transition: all 0.3s;
-  }
-  button.send-btn:hover {
-    box-shadow: 0 0 15px var(--primary-glow);
-  }
-
-  .modal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(5px);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal-content {
-    background: #06152d;
-    border: 1px solid var(--primary-color);
-    box-shadow: 0 0 25px var(--primary-glow);
-    padding: 25px;
-    width: 90%;
-    max-width: 450px;
-    border-radius: 6px;
-  }
+  /* Sağ-Sol Paneller */
+  .panel { width: 300px; height: 80vh; background: rgba(0, 50, 80, 0.2); border: 1px solid #00e5ff; padding: 20px; font-size: 0.9rem; }
+  
+  .data-line { margin-bottom: 15px; border-bottom: 1px solid #00e5ff33; padding-bottom: 5px; }
+  
+  #chat-box { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 600px; text-align: center; font-size: 1.2rem; text-shadow: 0 0 5px #fff; }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">JARVIS</div>
-  <div class="status"><div class="status-dot"></div> ÇEVRİMİÇİ</div>
-  <button class="settings-btn" onclick="openModal()">⚙ AYARLAR</button>
-</header>
-
-<main>
-  <div id="canvas-container" onclick="toggleVoice()">
-    <canvas id="orb"></canvas>
-    <div class="orb-text" id="orb-status">JARVIS<br><span style="font-size:0.65rem; opacity:0.7;">DOKUN & KONUŞ</span></div>
-  </div>
-
+<div class="hud-container">
+  <!-- Sol Panel -->
   <div class="panel">
-    <div class="output-box" id="chat">
-      <div class="msg-system">Jarvis Protokolü Aktif. Dinleme modu hazır.</div>
-    </div>
+    <div class="data-line">SİSTEM DURUMU: AKTİF</div>
+    <div class="data-line" id="date-time">TARİH/SAAT</div>
+    <div class="data-line" id="weather">HAVA: KONTROL EDİLİYOR...</div>
   </div>
 
-  <div class="input-group">
-    <input type="text" id="userInput" placeholder="> komut yaz..." onkeydown="if(event.key==='Enter') sendText()">
-    <button class="send-btn" onclick="sendText()">GÖNDER</button>
-  </div>
-</main>
+  <!-- Merkez -->
+  <div class="center-orb"></div>
 
-<div class="modal" id="settingsModal">
-  <div class="modal-content">
-    <h3 style="color:var(--primary-color); margin-bottom:15px;">API AYARLARI</h3>
-    <p style="font-size:0.8rem; margin-bottom:12px; color:#88a0b8;">Google AI Studio Gemini API anahtarınızı girin:</p>
-    <input type="text" id="apiKeyInput" style="width:100%; margin-bottom:15px;" placeholder="AIzaSy...">
-    <div style="display:flex; justify-content:flex-end; gap:10px;">
-      <button class="settings-btn" onclick="closeModal()">İPTAL</button>
-      <button class="send-btn" style="padding:8px 15px;" onclick="saveApiKey()">KAYDET</button>
-    </div>
+  <!-- Sağ Panel -->
+  <div class="panel">
+    <div class="data-line">İŞLEMCİ: %12</div>
+    <div class="data-line">AĞ: OPTİMUM</div>
+    <div class="data-line">BİLİNÇ: %100</div>
   </div>
 </div>
 
+<div id="chat-box">Sistem dinlemede...</div>
+
 <script>
-  const canvas = document.getElementById('orb');
-  const ctx = canvas.getContext('2d');
-  let isListening = false;
-  let isSpeaking = false;
-  let isThinking = false;
+  // 1. Sürekli Dinleme (Sürekli dinleme için SpeechRecognition)
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SpeechRec();
+  rec.continuous = true;
+  rec.interimResults = false;
+  rec.lang = 'tr-TR';
 
-  function resizeCanvas() {
-    canvas.width = canvas.parentElement.offsetWidth * window.devicePixelRatio;
-    canvas.height = canvas.parentElement.offsetHeight * window.devicePixelRatio;
-  }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+  rec.onresult = (e) => {
+    const txt = e.results[e.results.length - 1][0].transcript;
+    document.getElementById('chat-box').innerText = "Siz: " + txt;
+    askJarvis(txt);
+  };
+  rec.start(); // Sayfa açılınca otomatik başlar
 
-  let angle = 0;
-  function draw() {
-    requestAnimationFrame(draw);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const r = (canvas.width / 3.5) + (isSpeaking || isListening ? Math.sin(Date.now()*0.01)*8 : 0);
-
-    angle += (isThinking ? 0.08 : 0.02);
-
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(angle);
-
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.strokeStyle = isListening ? '#00ff88' : (isThinking ? '#ffaa00' : 'rgba(0, 229, 255, 0.6)');
-    ctx.lineWidth = 2.5 * window.devicePixelRatio;
-    ctx.stroke();
-
-    for(let i=0; i<4; i++) {
-      ctx.beginPath();
-      ctx.arc(0, 0, r * (0.4 + i*0.2), 0, Math.PI * 1.2);
-      ctx.strokeStyle = 'rgba(0, 229, 255, 0.25)';
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-  draw();
-
-  const chat = document.getElementById('chat');
-  function addMessage(sender, text) {
-    const div = document.createElement('div');
-    div.className = sender === 'user' ? 'msg-user' : (sender === 'jarvis' ? 'msg-jarvis' : 'msg-system');
-    div.innerHTML = (sender === 'user' ? 'SİZ: ' : (sender === 'jarvis' ? 'JARVIS: ' : '')) + text;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-  }
-
-  function openModal() {
-    document.getElementById('apiKeyInput').value = localStorage.getItem('GEMINI_API_KEY') || '';
-    document.getElementById('settingsModal').style.display = 'flex';
-  }
-  function closeModal() {
-    document.getElementById('settingsModal').style.display = 'none';
-  }
-  function saveApiKey() {
-    const key = document.getElementById('apiKeyInput').value.trim();
-    if(key) {
-      localStorage.setItem('GEMINI_API_KEY', key);
-      addMessage('system', 'API anahtarı başarıyla güncellendi.');
-    }
-    closeModal();
-  }
-
-  async function askGemini(prompt) {
+  // 2. Jarvis Mantığı
+  async function askJarvis(q) {
     const apiKey = localStorage.getItem('GEMINI_API_KEY');
-    if(!apiKey) {
-      addMessage('jarvis', 'Lütfen sağ üstteki ayarlardan Gemini API anahtarınızı tanımlayın.');
-      return;
-    }
-
-    isThinking = true;
-    document.getElementById('orb-status').innerText = 'DÜŞÜNÜYOR...';
-
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `Sen Tony Stark'ın yapay zekası JARVIS'sin. Türkçe, zeki, sadık ve kısa yanıtlar ver. Soru: ${prompt}` }] }]
-        })
-      });
-
-      const data = await response.json();
-      if(data.error) throw new Error(data.error.message);
-
-      const reply = data.candidates[0].content.parts[0].text;
-      addMessage('jarvis', reply);
-      speak(reply);
-    } catch(err) {
-      addMessage('system', 'Hata: ' + err.message);
-    } finally {
-      isThinking = false;
-      document.getElementById('orb-status').innerHTML = 'JARVIS<br><span style="font-size:0.65rem; opacity:0.7;">DOKUN & KONUŞ</span>';
-    }
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: `Sen sadık, zeki ve kişisel bir asistansın. Tony Stark takıntın yok. Soru: ${q}` }] }] })
+    });
+    const data = await res.json();
+    const reply = data.candidates[0].content.parts[0].text;
+    document.getElementById('chat-box').innerText = "Jarvis: " + reply;
+    
+    // Seslendirme
+    const msg = new SpeechSynthesisUtterance(reply);
+    msg.lang = 'tr-TR';
+    window.speechSynthesis.speak(msg);
   }
 
-  function speak(text) {
-    if('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const clean = text.replace(/[*#_`]/g, '');
-      const utt = new SpeechSynthesisUtterance(clean);
-      utt.lang = 'tr-TR';
-      utt.onstart = () => { isSpeaking = true; };
-      utt.onend = () => { isSpeaking = false; };
-      window.speechSynthesis.speak(utt);
-    }
-  }
-
-  function sendText() {
-    const input = document.getElementById('userInput');
-    const txt = input.value.trim();
-    if(!txt) return;
-    addMessage('user', txt);
-    input.value = '';
-    askGemini(txt);
-  }
-
-  let recognition;
-  if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRec();
-    recognition.lang = 'tr-TR';
-    recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      addMessage('user', transcript);
-      askGemini(transcript);
-    };
-    recognition.onend = () => { isListening = false; };
-  }
-
-  function toggleVoice() {
-    if(!recognition) {
-      alert('Tarayıcınız ses tanımayı desteklemiyor.');
-      return;
-    }
-    if(isListening) {
-      recognition.stop();
-      isListening = false;
-    } else {
-      recognition.start();
-      isListening = true;
-      document.getElementById('orb-status').innerText = 'DİNLİYOR...';
-    }
-  }
+  // 3. Gösterge Güncellemeleri
+  setInterval(() => {
+    document.getElementById('date-time').innerText = new Date().toLocaleString('tr-TR');
+  }, 1000);
 </script>
 </body>
 </html>
